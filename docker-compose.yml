@@ -1,0 +1,90 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: coffee-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: coffee_counter
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d coffee_counter"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mongodb:
+    image: mongo:7
+    container_name: coffee-mongodb
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  fastapi-service:
+    build:
+      context: ./fastapi-service
+    image: coffee-counter-fastapi-service
+    container_name: coffee-fastapi-service
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: coffee_counter
+      MONGODB_URL: mongodb://mongodb:27017
+      MONGODB_DB: coffee_counter_stats
+      MONGODB_COLLECTION: stats_snapshots
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+
+  nestjs-api:
+    build:
+      context: ./nestjs-api
+    image: coffee-counter-nestjs-api
+    container_name: coffee-nestjs-api
+    environment:
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: coffee_counter
+      FASTAPI_BASE_URL: http://fastapi-service:8000
+      REACT_APP_ORIGIN: http://localhost:5173
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      fastapi-service:
+        condition: service_started
+
+  react-app:
+    build:
+      context: ./react-app
+      args:
+        VITE_API_BASE_URL: http://localhost:3000
+    image: coffee-counter-react-app
+    container_name: coffee-react-app
+    ports:
+      - "5173:80"
+    depends_on:
+      - nestjs-api
+
+volumes:
+  postgres_data:
+  mongodb_data:

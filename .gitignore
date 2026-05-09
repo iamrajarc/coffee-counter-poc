@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+.venv/
+
+# build outputs
+dist/
+build/
+
+# env files
+.env
+.env.*
+
+# logs
+*.log
+npm-debug.log*
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+
+# Docker/local data
+postgres_data/
+mongodb_data/
