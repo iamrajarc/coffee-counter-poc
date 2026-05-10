@@ -19,7 +19,7 @@ export function CoffeeList({ coffees, onDeleted }: CoffeeListProps) {
 
   return (
     <section>
-      <h2>Coffee Logs</h2>
+      <h2>Coffee Logs Raja</h2>
 
       {coffees.length === 0 ? (
         <p>No coffees logged yet.</p>
