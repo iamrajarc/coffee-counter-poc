@@ -12,39 +12,11 @@ pipeline {
       }
     }
 
-    stage('Verify Tools') {
+    stage('Verify Docker Tools') {
       steps {
-        sh 'node --version || true'
-        sh 'npm --version || true'
-        sh 'python3 --version || python --version || true'
+        sh 'git --version'
         sh 'docker version'
         sh 'docker compose version'
-      }
-    }
-
-    stage('Build NestJS') {
-      steps {
-        dir('nestjs-api') {
-          sh 'npm ci'
-          sh 'npm run build'
-        }
-      }
-    }
-
-    stage('Build React') {
-      steps {
-        dir('react-app') {
-          sh 'npm ci'
-          sh 'npm run build'
-        }
-      }
-    }
-
-    stage('Validate FastAPI') {
-      steps {
-        dir('fastapi-service') {
-          sh 'python3 -m py_compile main.py || python -m py_compile main.py'
-        }
       }
     }
 
@@ -56,7 +28,7 @@ pipeline {
 
     stage('Docker Push - skipped') {
       steps {
-        echo 'Skipping Docker push for localhost POC. We will add Docker Hub credentials later if needed.'
+        echo 'Skipping Docker push for localhost POC. Docker registry credentials will be added later.'
       }
     }
 
@@ -69,15 +41,18 @@ pipeline {
 
     stage('Smoke Test') {
       steps {
-        sh 'sleep 15'
-        sh 'curl -f http://localhost:3000/coffees'
+        sh 'sleep 20'
+
+        sh 'curl -f http://host.docker.internal:3000/coffees'
+
         sh '''
-          curl -f -X POST http://localhost:3000/coffees \
+          curl -f -X POST http://host.docker.internal:3000/coffees \
             -H "Content-Type: application/json" \
             -d '{"type":"latte"}'
         '''
-        sh 'curl -f http://localhost:3000/stats'
-        sh 'curl -f http://localhost:8000/health'
+
+        sh 'curl -f http://host.docker.internal:3000/stats'
+        sh 'curl -f http://host.docker.internal:8000/health'
       }
     }
   }
